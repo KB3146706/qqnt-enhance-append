@@ -557,7 +557,7 @@ function installStickers(api, getConfig, toast) {
 // 消息数据从 .message 元素上的 __VUE__[0].props.msgRecord 读（QQ 9.9.36 实测）。
 
 const api = window.qq_enhance;
-let config = { antiRecall: true, chatPos: true, repeat: true, pokeNoCd: false, quoteNoAt: true, arkExternal: true, pangu: true, stickers: true, stickerDir: "", showEmojiSearch: true, showEmojiDefault: true, showEmojiFav: true, noUpdate: true };
+let config = { antiRecall: true, chatPos: true, repeat: true, pokeNoCd: false, quoteNoAt: true, arkExternal: true, pangu: true, stickers: true, stickerDir: "", showEmojiSearch: true, showEmojiDefault: true, showEmojiFav: true, noUpdate: true, hideQzoneFeed: true };
 let stickers = null;
 
 function recordOf(el) {
@@ -603,6 +603,21 @@ const AR_CSS = `
   color: var(--ll-brand, var(--brand_standard, #1d9bf0));
   white-space: nowrap;
 }`;
+
+/* ════════════════ 1.1 隐藏群成员「更新说说」标签 ════════════════
+ * 群里有人更新了 QQ 空间/动态，右侧成员列表会在名字后加一个 .qzone-feed 小标签
+ * （里面是「更新说说」或「更新动态」）。按类名整块隐藏，只管成员列表，别处同名的不管。
+ * 用 body 属性做开关，Vue 重渲染时不用补节点。 */
+const QZ_CSS = `
+body[data-qe-hide-qzone-feed] .group-member-list .qzone-feed { display: none !important; }
+`;
+
+function applyQzoneFeed() {
+    const hide = !!config.hideQzoneFeed;
+    if (document.body.hasAttribute("data-qe-hide-qzone-feed") !== hide) {
+        document.body.toggleAttribute("data-qe-hide-qzone-feed", hide);
+    }
+}
 
 function markRecalled() {
     if (!recalled.size) return;
@@ -1120,10 +1135,17 @@ function start() {
     style.textContent = AR_CSS;
     (document.head || document.documentElement).appendChild(style);
 
-    api.getConfig().then(cfg => { if (cfg) config = cfg; scanNoUpdate(); }).catch(() => {});
+    const qzStyle = document.createElement("style");
+    qzStyle.id = "qq-enhance-qzone-style";
+    qzStyle.textContent = QZ_CSS;
+    (document.head || document.documentElement).appendChild(qzStyle);
+    applyQzoneFeed();
+
+    api.getConfig().then(cfg => { if (cfg) config = cfg; applyQzoneFeed(); scanNoUpdate(); }).catch(() => {});
     api.onConfigChanged(cfg => {
         if (cfg) config = cfg;
         reloadRecalled();
+        applyQzoneFeed();
         scanNoUpdate();
         if (stickers) { stickers.ensure(); stickers.reload(); }
     });
@@ -1165,6 +1187,7 @@ const FEATURES = [
     ["pangu", "发送时自动 pangu", "中英文、中文与数字之间自动补空格。消息开头打两个逗号（,, 或 ，，）则这条不处理，逗号本身也会去掉。"],
     ["arkExternal", "卡片用浏览器打开", "点 B 站等分享卡片（QQ小程序），用电脑默认浏览器打开网页，不再弹「文件已损坏」。"],
     ["noUpdate", "禁止 QQ 更新", "拦截更新配置推送、更新包下载和已弹出的更新提示，并隐藏「检查更新」入口。"],
+    ["hideQzoneFeed", "隐藏群成员动态标签", "群成员列表里，不再显示群昵称后面的「更新说说 / 更新动态」标签。"],
     ["stickers", "本地表情包", "表情面板底部多一个「本地表情」分类，发送表情文件夹里的图片。每个子文件夹是一个分组，另有收藏分组。"],
 ];
 

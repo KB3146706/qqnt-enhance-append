@@ -16,7 +16,7 @@
 //   [x] hookWindow 监听器累积修复（R1）
 //   [x] M5 防撤回异步重写：对齐上游 b226822 的 handle()/restoreOne/collectMessageRecords/预取，
 //       兜底（50ms×11 重试、500ms 硬超时、recentFetches 5s 去重、MAX_RECORDS=1000）原样保留
-const BUILD = '1.3.1+snowlora.3';
+const BUILD = '1.3.2+snowlora.4';
 const require = process.getBuiltinModule('module').createRequire(snowlora.script);
 const fs = require('node:fs');
 const path = require('node:path');
@@ -50,6 +50,7 @@ const DEFAULTS = {
   showEmojiDefault: true,
   showEmojiFav: true,
   noUpdate: true,
+  hideQzoneFeed: true,
 };
 
 fs.mkdirSync(MSG_DIR, { recursive: true });
